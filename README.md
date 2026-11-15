@@ -123,6 +123,3 @@ docker compose up --build
 - **Backend Health Check:** `http://localhost:8000/health`
 
 ---
-
-## 📄 Documentation
-- Full architectural design and phased engineering roadmap: [`docs/bhashabridge_development_report.pdf`](docs/bhashabridge_development_report.pdf)
