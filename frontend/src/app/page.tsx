@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mic, Square, Volume2, Loader2, ArrowLeftRight } from "lucide-react";
+import { Mic, Square, Volume2, Loader2, ArrowLeftRight, Radio } from "lucide-react";
 import { useInterpreterSocket, LanguageCode } from "@/hooks/useInterpreterSocket";
 
 const LANGUAGES: { code: LanguageCode; label: string; native: string }[] = [
@@ -19,6 +19,8 @@ export default function Home() {
     isRecording,
     isProcessing,
     isSpeaking,
+    autoMode,
+    setAutoMode,
     activeSpeaker,
     messages,
     startRecording,
@@ -36,20 +38,38 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Top Header */}
-      <header className="border-b border-slate-800 px-6 py-4 flex items-center justify-between bg-slate-900/60">
+      <header className="border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 bg-slate-900/60">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-white">BhashaBridge AI</h1>
           <p className="text-xs text-slate-400">Real-Time Sinhala • Tamil • English Voice Interpreter</p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-medium">
-          <span
-            className={`h-2.5 w-2.5 rounded-full ${
-              isConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-500"
+
+        <div className="flex items-center gap-4">
+          {/* Hands-Free Auto-Listen Toggle */}
+          <button
+            onClick={() => setAutoMode(!autoMode)}
+            disabled={!isConnected}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+              autoMode
+                ? "bg-amber-500/20 border-amber-500 text-amber-300 shadow-sm"
+                : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40"
             }`}
-          />
-          <span className={isConnected ? "text-emerald-400" : "text-rose-400"}>
-            {isConnected ? "Backend Connected" : "Disconnected"}
-          </span>
+          >
+            <Radio className={`w-3.5 h-3.5 ${autoMode ? "animate-ping text-amber-400" : ""}`} />
+            {autoMode ? "Auto-Listen: ON" : "Auto-Listen: OFF"}
+          </button>
+
+          {/* Connection Status */}
+          <div className="flex items-center gap-2 text-xs font-medium">
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${
+                isConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-500"
+              }`}
+            />
+            <span className={isConnected ? "text-emerald-400" : "text-rose-400"}>
+              {isConnected ? "Backend Connected" : "Disconnected"}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -60,7 +80,7 @@ export default function Home() {
             <ArrowLeftRight className="w-8 h-8 mb-3 text-slate-600" />
             <p className="text-sm font-medium text-slate-400">Ready for two-way conversation</p>
             <p className="text-xs mt-1">
-              Select languages below and tap either microphone button to speak.
+              Enable <strong>Auto-Listen</strong> for hands-free dialogue, or tap either microphone button below.
             </p>
           </div>
         ) : (
@@ -83,10 +103,15 @@ export default function Home() {
           ))
         )}
 
-        {/* Status Banner */}
-        {(isProcessing || isSpeaking) && (
+        {/* Active Status Banner */}
+        {(isProcessing || isSpeaking || activeSpeaker === "AUTO") && (
           <div className="flex items-center justify-center gap-2 text-sm text-indigo-300 bg-indigo-950/50 border border-indigo-800/50 rounded-xl py-3">
-            {isProcessing ? (
+            {activeSpeaker === "AUTO" ? (
+              <>
+                <Mic className="w-4 h-4 text-rose-400 animate-pulse" />
+                <span className="text-rose-300">Listening to speech... (pause to translate)</span>
+              </>
+            ) : isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Transcribing & translating...</span>
@@ -125,7 +150,13 @@ export default function Home() {
 
             <button
               onClick={() => toggleMic("A")}
-              disabled={!isConnected || isProcessing || isSpeaking || (isRecording && activeSpeaker === "B")}
+              disabled={
+                autoMode ||
+                !isConnected ||
+                isProcessing ||
+                isSpeaking ||
+                (isRecording && activeSpeaker === "B")
+              }
               className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-lg ${
                 isRecording && activeSpeaker === "A"
                   ? "bg-rose-600 hover:bg-rose-500 scale-105 ring-4 ring-rose-500/30"
@@ -139,7 +170,11 @@ export default function Home() {
               )}
             </button>
             <span className="text-xs text-slate-400">
-              {isRecording && activeSpeaker === "A" ? "Tap to Stop & Translate" : "Tap to Speak"}
+              {autoMode
+                ? "Hands-Free Auto-Listen Active"
+                : isRecording && activeSpeaker === "A"
+                ? "Tap to Stop & Translate"
+                : "Tap to Speak"}
             </span>
           </div>
 
@@ -164,7 +199,13 @@ export default function Home() {
 
             <button
               onClick={() => toggleMic("B")}
-              disabled={!isConnected || isProcessing || isSpeaking || (isRecording && activeSpeaker === "A")}
+              disabled={
+                autoMode ||
+                !isConnected ||
+                isProcessing ||
+                isSpeaking ||
+                (isRecording && activeSpeaker === "A")
+              }
               className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-lg ${
                 isRecording && activeSpeaker === "B"
                   ? "bg-rose-600 hover:bg-rose-500 scale-105 ring-4 ring-rose-500/30"
@@ -178,7 +219,11 @@ export default function Home() {
               )}
             </button>
             <span className="text-xs text-slate-400">
-              {isRecording && activeSpeaker === "B" ? "Tap to Stop & Translate" : "Tap to Speak"}
+              {autoMode
+                ? "Hands-Free Auto-Listen Active"
+                : isRecording && activeSpeaker === "B"
+                ? "Tap to Stop & Translate"
+                : "Tap to Speak"}
             </span>
           </div>
         </div>
